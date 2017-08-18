@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,9 +13,9 @@ namespace AspNetCoreUtilities
             new CancellationTokenSource();
 
         protected CancellationToken CancellationToken => _cancellationTokenSource.Token;
-        private readonly Thread _thread;
+        private Thread _thread;
 
-        protected BackgroundTaskService(IServiceScopeFactory serviceScopeFactory)
+        private void CreateThread(IServiceScopeFactory serviceScopeFactory)
         {
             _thread = new Thread(() =>
             {
@@ -53,8 +54,9 @@ namespace AspNetCoreUtilities
             });
         }
 
-        public void Register(IApplicationLifetime lifetime)
+        internal void Register(IApplicationLifetime lifetime, IServiceScopeFactory serviceScopeFactory)
         {
+            CreateThread(serviceScopeFactory);
             lifetime.ApplicationStarted.Register(() =>
             {
                 _thread.Start();
@@ -74,5 +76,14 @@ namespace AspNetCoreUtilities
 
         protected abstract Task DoIt(IServiceProvider serviceProvider);
         protected abstract TimeSpan TimeToWaitAfterException { get; }
+    }
+
+    public static class BackgroundTaskServiceExtensions
+    {
+        public static void UseBackgroundTaskService<T>(this IApplicationBuilder builder)
+            where T : BackgroundTaskService =>
+            builder.ApplicationServices.GetRequiredService<T>().Register(
+                builder.ApplicationServices.GetRequiredService<IApplicationLifetime>(),
+                builder.ApplicationServices.GetRequiredService<IServiceScopeFactory>());
     }
 }
