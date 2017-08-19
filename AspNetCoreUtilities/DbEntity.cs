@@ -17,7 +17,7 @@ namespace AspNetCoreUtilities
 
     public static class DbEntityExtensions
     {
-        public static IQueryable<T> NotDeleted<T>(IQueryable<T> queryable)
+        public static IQueryable<T> NotDeleted<T>(this IQueryable<T> queryable)
             where T : DbSoftDeleteEntity =>
             queryable.Where(e => !e.IsDeleted);
     }
