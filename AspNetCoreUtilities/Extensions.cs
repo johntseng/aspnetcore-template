@@ -7,5 +7,7 @@ namespace AspNetCoreUtilities
 {
     public static class Extensions
     {
+        public static bool HasValue(this string s) =>
+            !string.IsNullOrWhiteSpace(s);
     }
 }
