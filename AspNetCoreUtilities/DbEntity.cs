@@ -10,7 +10,7 @@ namespace AspNetCoreUtilities
         long Id { get; set; }
     }
 
-    public interface ISoftDelete :IDbEntity
+    public interface ISoftDelete
     {
         bool IsDeleted { get; set; }
     }
