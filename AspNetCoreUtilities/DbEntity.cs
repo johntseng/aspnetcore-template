@@ -5,20 +5,20 @@ using System.Text;
 
 namespace AspNetCoreUtilities
 {
-    public abstract class DbEntity
+    public interface IDbEntity
     {
-        public long Id { get; set; }
+        long Id { get; set; }
     }
 
-    public abstract class DbSoftDeleteEntity :DbEntity
+    public interface ISoftDelete :IDbEntity
     {
-        public bool IsDeleted { get; set; }
+        bool IsDeleted { get; set; }
     }
 
     public static class DbEntityExtensions
     {
         public static IQueryable<T> NotDeleted<T>(this IQueryable<T> queryable)
-            where T : DbSoftDeleteEntity =>
+            where T : ISoftDelete =>
             queryable.Where(e => !e.IsDeleted);
     }
 }
