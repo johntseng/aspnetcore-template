@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using RollbarDotNet;
 
 namespace AspNetCoreUtilities
 {
@@ -25,31 +27,40 @@ namespace AspNetCoreUtilities
                     {
                         using (var scope = serviceScopeFactory.CreateScope())
                         {
-                            DoIt(scope.ServiceProvider).Wait();
+                            try
+                            {
+                                DoIt(scope.ServiceProvider);
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                return;
+                            }
+                            catch (Exception e)
+                            {
+                                try
+                                {
+                                    scope.ServiceProvider.GetRequiredService<Rollbar>()
+                                    .SendException(e).Wait(CancellationToken);
+                                }
+                                catch (Exception)
+                                {
+                                }
+                                try
+                                {
+                                    SleepAndThrowIfCancellationRequested(TimeToWaitAfterException);
+                                }
+                                catch (OperationCanceledException)
+                                {
+                                    return;
+                                }
+                            }
                         }
                     }
-                    catch (OperationCanceledException)
+                    catch
                     {
-                        return;
+                        // ignored
                     }
-                    catch (Exception e)
-                    {
-                        try
-                        {
-                            Console.WriteLine(e);
-                        }
-                        catch (Exception)
-                        {
-                        }
-                        try
-                        {
-                            SleepAndThrowIfCancellationRequested(TimeToWaitAfterException);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            return;
-                        }
-                    }
+
                 }
             });
         }
@@ -74,8 +85,8 @@ namespace AspNetCoreUtilities
             CancellationToken.ThrowIfCancellationRequested();
         }
 
-        protected abstract Task DoIt(IServiceProvider serviceProvider);
-        protected abstract TimeSpan TimeToWaitAfterException { get; }
+        protected abstract void DoIt(IServiceProvider serviceProvider);
+        protected virtual TimeSpan TimeToWaitAfterException => TimeSpan.FromMinutes(1);
     }
 
     public static class BackgroundTaskServiceExtensions
