@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspNetCoreUtilities
@@ -12,8 +13,8 @@ namespace AspNetCoreUtilities
         public DateTime Time { get; set; }
 
         public virtual ICollection<ChangeLogEntity> ChangeLogEntities { get; set; }
-
-        public static int SaveWithTracking<T>(T context, Func<int> saveChanges)
+        
+        public static async Task<int> SaveWithTracking<T>(T context, Func<Task<int>> saveChanges)
             where T : DbContext, ITrackChanges
         {
             var changeLog = new ChangeLog
@@ -60,7 +61,7 @@ namespace AspNetCoreUtilities
                     })
                     .ToList()
             };
-            var changeCount = saveChanges();
+            var changeCount = await saveChanges();
             if (changeLog.ChangeLogEntities.Any())
             {
                 context.ChangeLogs.Add(changeLog);
@@ -68,10 +69,14 @@ namespace AspNetCoreUtilities
                 {
                     entity.EntityKey = entity.EntityKeyGetter();
                 }
-                saveChanges();
+                await saveChanges();
             }
             return changeCount;
         }
+
+        public static int SaveWithTracking<T>(T context, Func<int> saveChanges)
+            where T : DbContext, ITrackChanges => 
+            SaveWithTracking(context,() => Task.FromResult(saveChanges())).Result;
     }
 
     public class ChangeLogEntity : IDbEntity
