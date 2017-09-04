@@ -15,7 +15,7 @@ namespace AspNetCoreUtilities
         public virtual ICollection<ChangeLogEntity> ChangeLogEntities { get; set; }
         
         public static async Task<int> SaveWithTracking<T>(T context, Func<Task<int>> saveChanges)
-            where T : DbContext, ITrackChanges
+            where T : DbContext, IHasChangeLogs
         {
             var changeLog = new ChangeLog
             {
@@ -75,7 +75,7 @@ namespace AspNetCoreUtilities
         }
 
         public static int SaveWithTracking<T>(T context, Func<int> saveChanges)
-            where T : DbContext, ITrackChanges => 
+            where T : DbContext, IHasChangeLogs => 
             SaveWithTracking(context,() => Task.FromResult(saveChanges())).Result;
     }
 
@@ -108,7 +108,7 @@ namespace AspNetCoreUtilities
         public string CurrentValue { get; set; }
     }
 
-    public interface ITrackChanges
+    public interface IHasChangeLogs
     {
         DbSet<ChangeLog> ChangeLogs { get; set; }
     }
