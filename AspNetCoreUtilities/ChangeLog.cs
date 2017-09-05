@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 namespace AspNetCoreUtilities
 {
@@ -42,11 +43,12 @@ namespace AspNetCoreUtilities
                                     CurrentValue = p.CurrentValue?.ToString()
                                 })
                                 .ToList(),
-                            EntityKeyGetter = () => entry.CurrentValues[entry.Metadata
-                                .FindPrimaryKey()
-                                .Properties
-                                .Single()
-                                .Name].ToString()
+                            EntityKeyGetter = () => JsonConvert.SerializeObject(
+                                entry.Metadata
+                                    .FindPrimaryKey()
+                                    .Properties
+                                    .OrderBy(p => p.Name)
+                                    .ToDictionary(p => p.Name, p => entry.CurrentValues[p.Name]))
                         };
 
                         if (entry.Entity is ISoftDelete
